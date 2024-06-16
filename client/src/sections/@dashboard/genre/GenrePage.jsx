@@ -11,7 +11,9 @@ import {
   Container,
   Grid,
   IconButton,
+  InputAdornment,
   MenuItem,
+  OutlinedInput,
   Popover,
   Stack,
   Table,
@@ -22,6 +24,7 @@ import {
   TableRow,
   Typography
 } from "@mui/material";
+import SearchIcon from '@mui/icons-material/Search';
 import Iconify from "../../../components/iconify";
 import Scrollbar from "../../../components/scrollbar";
 import GenreTableHead from "./GenreListHead";
@@ -132,7 +135,6 @@ const GenrePage = () => {
     setGenre({ id: "", name: "", description: "" });
   };
 
-  // Handler functions
   const handleOpenMenu = (event) => {
     setIsMenuOpen(event.currentTarget);
   };
@@ -149,12 +151,14 @@ const GenrePage = () => {
     setIsDialogOpen(false);
   };
 
-  // Table functions
+  const handleFilterByName = (event) => {
+    setFilterName(event.target.value);
+  };
+
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
-    setGenres(applySortFilter(genres, getComparator(order, orderBy), filterName));
   };
 
   const handleChangePage = (event, newPage) => {
@@ -174,8 +178,9 @@ const GenrePage = () => {
     setIsModalOpen(false);
   };
 
-  // Determine user roles
   const canManageGenres = user.isAdmin || user.isLibrarian;
+
+  const filteredGenres = applySortFilter(genres, getComparator(order, orderBy), filterName);
 
   return (
     <>
@@ -201,6 +206,19 @@ const GenrePage = () => {
             </Button>
           )}
         </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+          <OutlinedInput
+            value={filterName}
+            onChange={handleFilterByName}
+            placeholder="Search by name..."
+            startAdornment={
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            }
+            sx={{ width: 240 }}
+          />
+        </Stack>
         {isTableLoading ? (
           <Grid style={{ textAlign: "center" }}>
             <CircularProgress size="lg" />
@@ -208,18 +226,18 @@ const GenrePage = () => {
         ) : (
           <Card>
             <Scrollbar>
-              {genres.length > 0 ? (
+              {filteredGenres.length > 0 ? (
                 <TableContainer sx={{ minWidth: 800 }}>
                   <Table>
                     <GenreTableHead
                       order={order}
                       orderBy={orderBy}
                       headLabel={TABLE_HEAD}
-                      rowCount={genres.length}
+                      rowCount={filteredGenres.length}
                       onRequestSort={handleRequestSort}
                     />
                     <TableBody>
-                      {genres
+                      {filteredGenres
                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                         .map((row) => {
                           const { _id, name, description } = row;
@@ -260,11 +278,11 @@ const GenrePage = () => {
                 </Alert>
               )}
             </Scrollbar>
-            {genres.length > 0 && (
+            {filteredGenres.length > 0 && (
               <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}
                 component="div"
-                count={genres.length}
+                count={filteredGenres.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}

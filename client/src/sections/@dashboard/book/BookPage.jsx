@@ -13,6 +13,7 @@ import {
   IconButton,
   MenuItem,
   Modal,
+  OutlinedInput,
   Popover,
   Stack,
   Typography,
@@ -57,7 +58,7 @@ const TruncatedTypography = styled(Typography)({
 const BookPage = () => {
   const { user } = useAuth();
 
-  // Data
+  // State variables
   const [book, setBook] = useState({
     id: '',
     name: '',
@@ -78,6 +79,7 @@ const BookPage = () => {
   });
 
   const [books, setBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]);
   const [selectedBookId, setSelectedBookId] = useState(null);
   const [isTableLoading, setIsTableLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(null);
@@ -85,6 +87,7 @@ const BookPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateForm, setIsUpdateForm] = useState(false);
   const [isBorrowalModalOpen, setIsBorrowalModalOpen] = useState(false);
+  const [filterName, setFilterName] = useState('');
 
   // API operations
 
@@ -93,6 +96,7 @@ const BookPage = () => {
       .get(apiUrl(routes.BOOK, methods.GET_ALL))
       .then((response) => {
         setBooks(response.data.booksList);
+        setFilteredBooks(response.data.booksList);
         setIsTableLoading(false);
       })
       .catch((error) => {
@@ -179,7 +183,6 @@ const BookPage = () => {
     });
   };
 
-  // Handler functions
   const handleOpenMenu = (event) => {
     setIsMenuOpen(event.currentTarget);
   };
@@ -222,10 +225,18 @@ const BookPage = () => {
     });
   };
 
-  // Load data on initial page load
   useEffect(() => {
     getAllBooks();
   }, []);
+
+  useEffect(() => {
+    if (filterName.trim() === '') {
+      setFilteredBooks(books);
+    } else {
+      const filteredResults = books.filter((book) => book.name.toLowerCase().includes(filterName.trim().toLowerCase()));
+      setFilteredBooks(filteredResults);
+    }
+  }, [filterName, books]);
 
   return (
     <>
@@ -252,13 +263,23 @@ const BookPage = () => {
           )}
         </Stack>
 
+        <Box mb={3}>
+          <OutlinedInput
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
+            placeholder="Search books..."
+            fullWidth
+            startAdornment={<Iconify icon="eva:search-outline" color="action" />}
+          />
+        </Box>
+
         {isTableLoading ? (
           <Grid padding={2} style={{ textAlign: 'center' }}>
             <CircularProgress />
           </Grid>
-        ) : books.length > 0 ? (
+        ) : filteredBooks.length > 0 ? (
           <Grid container spacing={4}>
-            {books.map((book) => (
+            {filteredBooks.map((book) => (
               <Grid key={book._id} item xs={12} sm={6} md={4}>
                 <Card>
                   <Box sx={{ pt: '80%', position: 'relative' }}>
@@ -310,7 +331,13 @@ const BookPage = () => {
                     <Typography textAlign="center" variant="h5" noWrap>
                       {book.name}
                     </Typography>
-                    <Typography variant="subtitle1" sx={{ color: '#888888' }} paddingBottom={1} noWrap textAlign="center">
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ color: '#888888' }}
+                      paddingBottom={1}
+                      noWrap
+                      textAlign="center"
+                    >
                       {book.author.name}
                     </Typography>
                     <Label color={book.isAvailable ? 'success' : 'error'} sx={{ padding: 2 }}>
@@ -340,82 +367,80 @@ const BookPage = () => {
             ))}
           </Grid>
         ) : (
-          <Alert severity="warning" color="warning"
-          >
-          No books found
-        </Alert>
-      )}
+          <Alert severity="warning" color="warning">
+            No books found
+          </Alert>
+        )}
+      </Container>
 
-    <Popover
-      open={Boolean(isMenuOpen)}
-      anchorEl={isMenuOpen}
-      onClose={handleCloseMenu}
-      anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      PaperProps={{
-        sx: {
-          p: 1,
-          width: 140,
-          '& .MuiMenuItem-root': {
-            px: 1,
-            typography: 'body2',
-            borderRadius: 0.75,
+      <Popover
+        open={Boolean(isMenuOpen)}
+        anchorEl={isMenuOpen}
+        onClose={handleCloseMenu}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        PaperProps={{
+          sx: {
+            p: 1,
+            width: 140,
+            '& .MuiMenuItem-root': {
+              px: 1,
+              typography: 'body2',
+              borderRadius: 0.75,
+            },
           },
-        },
-      }}
-    >
-      {(user.isAdmin || user.isLibrarian) && (
-        <MenuItem
-          onClick={() => {
-            setIsUpdateForm(true);
-            getSelectedBookDetails();
-            handleCloseMenu();
-            handleOpenModal();
-          }}
-        >
-          <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
-          Edit
-        </MenuItem>
-      )}
+        }}
+      >
+        {(user.isAdmin || user.isLibrarian) && (
+          <MenuItem
+            onClick={() => {
+              setIsUpdateForm(true);
+              getSelectedBookDetails();
+              handleCloseMenu();
+              handleOpenModal();
+            }}
+          >
+            <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
+            Edit
+          </MenuItem>
+        )}
 
-      {(user.isAdmin || user.isLibrarian) && (
-        <MenuItem sx={{ color: 'error.main' }} onClick={handleOpenDialog}>
-          <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
-          Delete
-        </MenuItem>
-      )}
-    </Popover>
+        {(user.isAdmin || user.isLibrarian) && (
+          <MenuItem sx={{ color: 'error.main' }} onClick={handleOpenDialog}>
+            <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
+            Delete
+          </MenuItem>
+        )}
+      </Popover>
 
-    <BorrowalForm
-      isModalOpen={isBorrowalModalOpen}
-      handleCloseModal={handleCloseBorrowalModal}
-      id={selectedBookId}
-      borrowal={borrowal}
-      setBorrowal={setBorrowal}
-      handleAddBorrowal={addBorrowal}
-    />
+      <BorrowalForm
+        isModalOpen={isBorrowalModalOpen}
+        handleCloseModal={handleCloseBorrowalModal}
+        id={selectedBookId}
+        borrowal={borrowal}
+        setBorrowal={setBorrowal}
+        handleAddBorrowal={addBorrowal}
+      />
 
-    <BookDialog
-      isDialogOpen={isDialogOpen}
-      bookId={selectedBookId}
-      handleDeleteBook={deleteBook}
-      handleCloseDialog={handleCloseDialog}
-    />
+      <BookDialog
+        isDialogOpen={isDialogOpen}
+        bookId={selectedBookId}
+        handleDeleteBook={deleteBook}
+        handleCloseDialog={handleCloseDialog}
+      />
 
-    <BookForm
-      isUpdateForm={isUpdateForm}
-      isModalOpen={isModalOpen}
-      handleCloseModal={handleCloseModal}
-      id={selectedBookId}
-      book={book}
-      setBook={setBook}
-      handleAddBook={addBook}
-      handleUpdateBook={updateBook}
-    />
-  </Container>
-</>
-);
+      <BookForm
+        isUpdateForm={isUpdateForm}
+        isModalOpen={isModalOpen}
+        handleCloseModal={handleCloseModal}
+        id={selectedBookId}
+        book={book}
+        setBook={setBook}
+        handleAddBook={addBook}
+        handleUpdateBook={updateBook}
+      />
+    </>
+  );
 };
 
 export default BookPage;
-

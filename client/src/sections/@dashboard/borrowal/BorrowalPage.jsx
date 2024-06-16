@@ -11,7 +11,9 @@ import {
   Container,
   Grid,
   IconButton,
+  InputAdornment,
   MenuItem,
+  OutlinedInput,
   Popover,
   Stack,
   Table,
@@ -22,6 +24,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import PendingIcon from '@mui/icons-material/HourglassEmpty';
 import AcceptedIcon from '@mui/icons-material/CheckCircle';
 import RejectedIcon from '@mui/icons-material/Cancel';
@@ -54,11 +57,10 @@ const TABLE_HEAD = [
 const BorrowalPage = () => {
   const { user } = useAuth();
   // State variables
-  // Table
   const [page, setPage] = useState(0);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('name');
-  const [filterName, setFilterName] = useState('');
+  const [memberNameFilter, setMemberNameFilter] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   // Data
@@ -101,7 +103,7 @@ const BorrowalPage = () => {
         // handle error
         console.log(error);
       });
-  };  
+  };
 
   const addBorrowal = () => {
     axios
@@ -206,12 +208,15 @@ const BorrowalPage = () => {
     setIsDialogOpen(false);
   };
 
+  const handleFilterByName = (event) => {
+    setMemberNameFilter(event.target.value);
+  };
+
   // Table functions
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
-    setBorrowals(applySortFilter(borrowals, getComparator(order, orderBy), filterName));
   };
 
   const handleChangePage = (event, newPage) => {
@@ -246,6 +251,13 @@ const BorrowalPage = () => {
     }
   };
 
+  const filteredBorrowals = applySortFilter(
+    borrowals.filter((borrowal) =>
+      borrowal.member.name.toLowerCase().includes(memberNameFilter.toLowerCase())
+    ),
+    getComparator(order, orderBy)
+  );
+
   return (
     <>
       <Helmet>
@@ -268,6 +280,19 @@ const BorrowalPage = () => {
             New Borrowal
           </Button>
         </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+          <OutlinedInput
+            value={memberNameFilter}
+            onChange={handleFilterByName}
+            placeholder="Search by member name..."
+            startAdornment={
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            }
+            sx={{ width: 240 }}
+          />
+        </Stack>
         {isTableLoading ? (
           <Grid style={{ textAlign: 'center' }}>
             <CircularProgress size="lg" />
@@ -275,50 +300,54 @@ const BorrowalPage = () => {
         ) : (
           <Card>
             <Scrollbar>
-              {borrowals.length > 0 ? (
+              {filteredBorrowals.length > 0 ? (
                 <TableContainer sx={{ minWidth: 800 }}>
                   <Table>
                     <BorrowalListHead
                       order={order}
                       orderBy={orderBy}
                       headLabel={TABLE_HEAD}
-                      rowCount={borrowal.length}
+                      rowCount={filteredBorrowals.length}
                       onRequestSort={handleRequestSort}
                     />
                     <TableBody>
-                      {borrowals.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((borrowal) => (
-                        <TableRow hover key={borrowal._id} tabIndex={-1}>
-                          <TableCell align="left"> {borrowal.member.name} </TableCell>
-                          <TableCell align="left">{borrowal.book.name}</TableCell>
-                          <TableCell align="left">
-                            {' '}
-                            {new Date(borrowal.borrowedDate).toLocaleDateString('en-US')}{' '}
-                          </TableCell>
-                          <TableCell align="left">{new Date(borrowal.dueDate).toLocaleDateString('en-US')}</TableCell>
-                          <TableCell align="left" style={{ textTransform: 'uppercase' }}>
-                            {getStatusIcon(borrowal.status)} {borrowal.status}
-                          </TableCell>
-                          <TableCell align="left">
-                            {new Date(borrowal.dueDate) < new Date() && (
-                              <Label color="error" sx={{ padding: 2 }}>
-                                Overdue
-                              </Label>
-                            )}
-                          </TableCell>
-                          <TableCell align="right">
-                            <IconButton
-                              size="large"
-                              color="inherit"
-                              onClick={(e) => {
-                                setSelectedBorrowalId(borrowal._id);
-                                handleOpenMenu(e);
-                              }}
-                            >
-                              <Iconify icon={'eva:more-vertical-fill'} />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {filteredBorrowals
+                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                        .map((borrowal) => (
+                          <TableRow hover key={borrowal._id} tabIndex={-1}>
+                            <TableCell align="left"> {borrowal.member.name} </TableCell>
+                            <TableCell align="left">{borrowal.book.name}</TableCell>
+                            <TableCell align="left">
+                              {' '}
+                              {new Date(borrowal.borrowedDate).toLocaleDateString('en-US')}{' '}
+                            </TableCell>
+                            <TableCell align="left">
+                              {new Date(borrowal.dueDate).toLocaleDateString('en-US')}
+                            </TableCell>
+                            <TableCell align="left" style={{ textTransform: 'uppercase' }}>
+                              {getStatusIcon(borrowal.status)} {borrowal.status}
+                            </TableCell>
+                            <TableCell align="left">
+                              {new Date(borrowal.dueDate) < new Date() && (
+                                <Label color="error" sx={{ padding: 2 }}>
+                                  Overdue
+                                </Label>
+                              )}
+                            </TableCell>
+                            <TableCell align="right">
+                              <IconButton
+                                size="large"
+                                color="inherit"
+                                onClick={(e) => {
+                                  setSelectedBorrowalId(borrowal._id);
+                                  handleOpenMenu(e);
+                                }}
+                              >
+                                <Iconify icon={'eva:more-vertical-fill'} />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -328,11 +357,11 @@ const BorrowalPage = () => {
                 </Alert>
               )}
             </Scrollbar>
-            {borrowals.length > 0 && (
+            {filteredBorrowals.length > 0 && (
               <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}
                 component="div"
-                count={borrowals.length}
+                count={filteredBorrowals.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}

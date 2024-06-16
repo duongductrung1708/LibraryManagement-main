@@ -12,7 +12,9 @@ import {
   Container,
   Grid,
   IconButton,
+  InputAdornment,
   MenuItem,
+  OutlinedInput,
   Popover,
   Stack,
   Table,
@@ -23,6 +25,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 
 import Iconify from '../../../components/iconify';
 import Scrollbar from '../../../components/scrollbar';
@@ -186,13 +189,14 @@ const UserPage = () => {
     setIsDialogOpen(false);
   };
 
-  // Table functions
+  const handleFilterByName = (event) => {
+    setFilterName(event.target.value);
+  };
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
-    setUsers(applySortFilter(users, getComparator(order, orderBy), filterName));
   };
 
   const handleChangePage = (event, newPage) => {
@@ -211,6 +215,8 @@ const UserPage = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
   };
+
+  const filteredUsers = applySortFilter(users, getComparator(order, orderBy), filterName);
 
   return (
     <>
@@ -234,6 +240,21 @@ const UserPage = () => {
             New User
           </Button>
         </Stack>
+
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+          <OutlinedInput
+            value={filterName}
+            onChange={handleFilterByName}
+            placeholder="Search by name..."
+            startAdornment={
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            }
+            sx={{ width: 240 }}
+          />
+        </Stack>
+
         {isTableLoading ? (
           <Grid style={{ textAlign: 'center' }}>
             <CircularProgress size="lg" />
@@ -241,21 +262,20 @@ const UserPage = () => {
         ) : (
           <Card>
             <Scrollbar>
-              {users.length > 0 ? (
+              {filteredUsers.length > 0 ? (
                 <TableContainer sx={{ minWidth: 800 }}>
                   <Table>
                     <UserTableHead
                       order={order}
                       orderBy={orderBy}
                       headLabel={TABLE_HEAD}
-                      rowCount={users.length}
+                      rowCount={filteredUsers.length}
                       onRequestSort={handleRequestSort}
                     />
                     <TableBody>
-                      {users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user) => (
+                      {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user) => (
                         <TableRow hover key={user._id} tabIndex={-1}>
                           <TableCell align="left">
-                            {' '}
                             <Avatar alt={user.name} src={user.photoUrl} />
                           </TableCell>
 
@@ -300,11 +320,11 @@ const UserPage = () => {
                 </Alert>
               )}
             </Scrollbar>
-            {users.length > 0 && (
+            {filteredUsers.length > 0 && (
               <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}
                 component="div"
-                count={users.length}
+                count={filteredUsers.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}

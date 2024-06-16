@@ -12,7 +12,9 @@ import {
   Container,
   Grid,
   IconButton,
+  InputAdornment,
   MenuItem,
+  OutlinedInput,
   Popover,
   Stack,
   Table,
@@ -23,6 +25,7 @@ import {
   TableRow,
   Typography
 } from "@mui/material";
+import SearchIcon from '@mui/icons-material/Search';
 import { useAuth } from "../../../hooks/useAuth";
 
 import Iconify from "../../../components/iconify";
@@ -174,6 +177,12 @@ const AuthorPage = () => {
     setIsModalOpen(false);
   };
 
+  const handleFilterByName = (event) => {
+    setFilterName(event.target.value);
+  };
+
+  const filteredAuthors = applySortFilter(authors, getComparator(order, orderBy), filterName);
+
   return (
     <>
       <Helmet>
@@ -198,6 +207,19 @@ const AuthorPage = () => {
             </Button>
           )}
         </Stack>
+
+        <OutlinedInput
+          value={filterName}
+          onChange={handleFilterByName}
+          placeholder="Search authors..."
+          startAdornment={
+            <InputAdornment position="start">
+              <SearchIcon />
+            </InputAdornment>
+          }
+          sx={{ mb: 3 }}
+        />
+
         {isTableLoading ? (
           <Grid padding={2} style={{ textAlign: "center" }}>
             <CircularProgress />
@@ -205,18 +227,18 @@ const AuthorPage = () => {
         ) : (
           <Card>
             <Scrollbar>
-              {authors.length > 0 ? (
+              {filteredAuthors.length > 0 ? (
                 <TableContainer sx={{ minWidth: 800 }}>
                   <Table>
                     <AuthorTableHead
                       order={order}
                       orderBy={orderBy}
                       headLabel={TABLE_HEAD}
-                      rowCount={authors.length}
+                      rowCount={filteredAuthors.length}
                       onRequestSort={handleRequestSort}
                     />
                     <TableBody>
-                      {authors
+                      {filteredAuthors
                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                         .map((row) => {
                           const { _id, name, description, photoUrl } = row;
@@ -258,11 +280,11 @@ const AuthorPage = () => {
                 </Alert>
               )}
             </Scrollbar>
-            {authors.length > 0 && (
+            {filteredAuthors.length > 0 && (
               <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}
                 component="div"
-                count={authors.length}
+                count={filteredAuthors.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={handleChangePage}
