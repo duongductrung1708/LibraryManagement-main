@@ -11,6 +11,7 @@ import GenrePage from "./sections/@dashboard/genre/GenrePage";
 import { useAuth } from "./hooks/useAuth";
 import UserProfile from "./sections/@dashboard/user/UserProfile";
 import BorrowalHistory from "./sections/@dashboard/borrowal/BorrowalHistory";
+import BookDetails from "./sections/@dashboard/book/BookDetails";
 
 // ----------------------------------------------------------------------
 
@@ -23,7 +24,8 @@ export default function Router() {
     { path: "genres", element: <GenrePage /> },
     { path: "borrowals", element: <BorrowalPage /> },
     { path: "userprofile/:id", element: <UserProfile /> },
-    { path: "userprofile/history/:id", element: <BorrowalHistory /> }
+    { path: "userprofile/history/:id", element: <BorrowalHistory /> },
+    { path: "books/:id", element: <BookDetails /> }
   ];
 
   const adminRoutes = useRoutes([

@@ -18,6 +18,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { Link } from 'react-router-dom';
 import { Alert } from '@mui/lab';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../../hooks/useAuth';
@@ -328,9 +329,11 @@ const BookPage = () => {
                   </Box>
 
                   <Stack spacing={1} sx={{ p: 2 }}>
-                    <Typography textAlign="center" variant="h5" noWrap>
-                      {book.name}
-                    </Typography>
+                    <Link to={`/books/${book._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <Typography textAlign="center" variant="h5" noWrap>
+                        {book.name}
+                      </Typography>
+                    </Link>
                     <Typography
                       variant="subtitle1"
                       sx={{ color: '#888888' }}
