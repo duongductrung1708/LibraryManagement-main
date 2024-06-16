@@ -1,8 +1,6 @@
-// Import required modules
 const express = require("express")
 const router = express.Router();
 
-// Import functions from controller
 const {
   getUser,
   getAllUsers,

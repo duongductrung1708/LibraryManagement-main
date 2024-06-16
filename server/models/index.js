@@ -6,14 +6,15 @@ const Genre = require("./genre.model");
 const Review = require("./review.model");
 const User = require("./user.model");
 
-const db = {
-  mongoose,
-  author: Author,
-  book: Book,
-  borrowal: Borrowal,
-  genre: Genre,
-  review: Review,
-  user: User,
-};
+mongoose.Promise = global.Promise;
+
+const db = {};
+db.mongoose = mongoose;
+db.author = Author;
+db.book = Book;
+db.borrowal = Borrowal;
+db.genre = Genre;
+db.review = Review;
+db.user = User;
 
 module.exports = db;
