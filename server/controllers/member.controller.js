@@ -1,31 +1,23 @@
-const Member = require('../models/member')
+const db = require('../models');
+const Member = db.member;
 
-const getMember = async (req, res) => {
-    const memberId = req.params.id;
-
-    Member.findById(memberId, (err, member) => {
-        if (err) {
-            return res.status(400).json({ success: false, err });
-        }
-
-        return res.status(200).json({
-            success: true,
-            member
-        });
-    });
+async function getMember(req, res, next) {
+    try {
+        const memberId = req.params.id;
+        const member = await Member.findById(memberId);
+        res.status(200).json({ member: member });
+    } catch (error) {
+        next(error);
+    }
 }
 
-const getAllMembers = async (req, res) => {
-    Member.find({}, (err, members)=>{
-        if (err) {
-            return res.status(400).json({ success: false, err });
-        }
-
-        return res.status(200).json({
-            success: true,
-            membersList: members
-        });
-    })
+async function getAllMembers (req, res, next) {
+    try {
+        const membersList = await Member.find();
+        res.status(200).json({ membersList: membersList });
+    } catch (error) {
+        next(error);
+    }
 }
 
 const addMember = async (req, res) => {
@@ -74,10 +66,12 @@ const deleteMember = async (req, res) => {
     })
 }
 
-module.exports = {
+const memberController ={
     getMember,
     getAllMembers,
     addMember,
     updateMember,
     deleteMember
 }
+
+module.exports =memberController;

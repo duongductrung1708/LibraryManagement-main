@@ -4,7 +4,7 @@ const logger = require("morgan");
 const passport = require("passport");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
-const mongoose = require("mongoose");
+const db = require("./models");
 
 const {
   AuthRouter,
@@ -21,7 +21,6 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 const app = express();
-const PORT = process.env.PORT || 8080;
 
 app.use(logger("dev"));
 
@@ -60,20 +59,23 @@ app.use("/api/genre", GenreRouter);
 app.use("/api/user", UserRouter);
 app.use("/api/review", ReviewRouter);
 
+app.use(async (req, res, next) => {
+  next(httpError.NotFound());
+});
+
+app.use((err, req, res, next) => {
+  res.status(err.status || 500);
+  res.send({
+    error: {
+      status: err.status || 500,
+      message: err.message,
+    },
+  });
+});
+
 app.get("/", (req, res) => res.send("Welcome to Library Management System"));
 
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("Connected to MongoDB successfully");
-  } catch (err) {
-    console.error("Error connecting to MongoDB:", err.message);
-  }
-};
-
-connectDB();
-
-app.listen(PORT, () => console.log(`Server listening on port ${PORT}!`));
+app.listen(process.env.PORT, process.env.HOST_NAME, () => {
+  console.log("Server listening on port " + process.env.PORT);
+  db.connectDB();
+});

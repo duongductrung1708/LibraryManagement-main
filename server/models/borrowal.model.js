@@ -23,4 +23,6 @@ const borrowalSchema = new mongoose.Schema({
     },
 })
 
-module.exports = mongoose.model('Borrowal', borrowalSchema)
+const Borrowal = mongoose.model('Borrowal', borrowalSchema)
+
+module.exports = Borrowal;

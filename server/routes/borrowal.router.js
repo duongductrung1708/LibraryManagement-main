@@ -1,24 +1,20 @@
-// Import required modules
-const express = require("express")
-const router = express.Router();
+const express = require('express');
+const bodyParser = require('body-parser');
+const { borrowalController } = require('../controllers')
 
-// Import functions from controller
-const {
-    getBorrowal,
-    getAllBorrowals,
-    addBorrowal,
-    updateBorrowal,
-    deleteBorrowal
-} = require('../controllers/borrowal.controller')
+const borrowalRouter = express.Router();
 
-router.get("/getAll", (req, res) => getAllBorrowals(req,res))
+borrowalRouter.get('/getAll', borrowalController.getAllBorrowals)
 
-router.get("/get/:id", (req, res) => getBorrowal(req, res))
+borrowalRouter.get('/get/:id', borrowalController.getBorrowal)
 
-router.post("/add", (req, res) => addBorrowal(req, res))
+borrowalRouter.post('/add' , borrowalController.addBorrowal)
 
-router.put("/update/:id", (req, res) => updateBorrowal(req, res))
+borrowalRouter.put('/update/:id', borrowalController.updateBorrowal)
 
-router.delete("/delete/:id", (req, res) => deleteBorrowal(req, res))
+borrowalRouter.delete('/delete/:id', borrowalController.deleteBorrowal)
 
-module.exports = router;
+
+
+
+module.exports = borrowalRouter;

@@ -1,6 +1,7 @@
 // Import required modules
 const express = require("express")
 const router = express.Router();
+const { bookController } = require("../controllers");
 
 // Import functions from controller
 const {
@@ -11,14 +12,14 @@ const {
     deleteBook
 } = require('../controllers/book.controller')
 
-router.get("/getAll", (req, res) => getAllBooks(req,res))   
+router.get("/getAll", bookController.getAllBooks)   
 
-router.get("/get/:id", (req, res) => getBook(req, res))
+router.get("/get/:id", bookController.getBook)
 
-router.post("/add", (req, res) => addBook(req, res))
+router.post("/add", bookController.addBook)
 
-router.put("/update/:id", (req, res) => updateBook(req, res))
+router.put("/update/:id", bookController.updateBook)
 
-router.delete("/delete/:id", (req, res) => deleteBook(req, res))
+router.delete("/delete/:id", bookController.deleteBook)
 
 module.exports = router;

@@ -3,7 +3,8 @@ const mongoose = require('mongoose')
 const authorSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        unique : true
     },
     description: {
         type: String,
@@ -15,4 +16,6 @@ const authorSchema = new mongoose.Schema({
     }
 })
 
-module.exports = mongoose.model('Author', authorSchema)
+const Author = mongoose.model('Author', authorSchema)
+
+module.exports = Author;

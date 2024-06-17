@@ -1,5 +1,6 @@
-const User = require('../models/user.model')
 const passport = require("passport");
+const db = require('../models');
+const User = db.user;
 
 const registerUser = async (req, res) => {
   User.findOne({email: req.body.email}, (err, user) => {
@@ -46,6 +47,7 @@ const loginUser = async (req, res, next) => {
         });
       });
     },)(req, res, next);
+    
   })
 }
 
@@ -59,8 +61,10 @@ const logoutUser = async (req, res, next) => {
   return res.status(200).json({success: true, message: "User logged out"});
 }
 
-module.exports = {
+const authController ={
   registerUser,
   loginUser,
   logoutUser
 }
+
+module.exports = authController;

@@ -1,6 +1,7 @@
-const Borrowal = require('../models/borrowal.model');
 const mongoose = require("mongoose");
-const Book = require("../models/book.model");
+const db = require('../models');
+const Borrowal = db.borrowal;
+const Book = db.book;
 
 const getBorrowal = async (req, res) => {
     const borrowalId = req.params.id;
@@ -128,10 +129,13 @@ const deleteBorrowal = async (req, res) => {
     });
 };
 
-module.exports = {
+const borrowalController ={
     getBorrowal,
     getAllBorrowals,
     addBorrowal,
     updateBorrowal,
     deleteBorrowal
-};
+}
+
+
+module.exports =  borrowalController;

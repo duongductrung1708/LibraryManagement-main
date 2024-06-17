@@ -11,11 +11,6 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true,
-  },
-  password: {
-    type: String,
-    required: true,
   },
   dob: {
     type: Date,
@@ -60,4 +55,6 @@ UserSchema.methods.isValidPassword = function (password) {
   return this.hash === hash;
 };
 
-module.exports = mongoose.model("User", UserSchema);
+const User = mongoose.model("User", UserSchema);
+
+module.exports = User;

@@ -13,11 +13,11 @@ const memberSchema = new mongoose.Schema({
         required: false
     },
     nic: {
-        type: Integer,
+        type: Number,
         required: true
     },
     phone: {
-        type: Integer,
+        type: Number,
         required: true
     },
     status: {
@@ -34,4 +34,6 @@ const memberSchema = new mongoose.Schema({
     }
 })
 
-module.exports = mongoose.model('Member', memberSchema)
+const Member = mongoose.model('Member', memberSchema)
+
+module.exports = Member;

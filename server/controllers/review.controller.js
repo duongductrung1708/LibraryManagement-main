@@ -1,4 +1,5 @@
-const Review = require('../models/review.model')
+const db = require('../models');
+const Review = db.review;
 
 async function getReviewById(req, res,next) {
   try {
@@ -88,7 +89,7 @@ async function deleteReview(req, res, next){
   }
 }
 
-module.exports = {
+const reviewController = {
     getReviewById,
     getAllReviews,
     addReview,
@@ -96,3 +97,4 @@ module.exports = {
     deleteReview,
     getReviewByBookId
 }
+module.exports = reviewController;
