@@ -9,6 +9,10 @@ const borrowalSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     required: true
   },
+  requestDate :{
+    type: Date,
+    required: false
+  },
     borrowedDate: {
         type: Date,
         required: false
@@ -21,6 +25,15 @@ const borrowalSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    overdue: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    note : {
+      type : String,
+      required: false
+    }
 })
 
 const Borrowal = mongoose.model('Borrowal', borrowalSchema)

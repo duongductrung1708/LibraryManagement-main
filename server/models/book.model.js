@@ -28,8 +28,18 @@ const bookSchema = new mongoose.Schema({
   photoUrl: {
     type: String,
     required: false
-  }
+  },
+  pageUrls: {
+    type: [String],
+    required: false
+  },
+  position: {
+    type: String,
+    required: true
+  },
+
 })
+
 
 const Book = mongoose.model('Book', bookSchema)
 

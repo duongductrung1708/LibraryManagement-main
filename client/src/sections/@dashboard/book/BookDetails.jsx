@@ -2,21 +2,38 @@ import { Helmet } from 'react-helmet-async';
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Typography, Box, Button, CircularProgress, Grid, Avatar, TextField, Divider } from '@mui/material';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Container, Typography, Box, Button, CircularProgress, Grid, Avatar, TextField, Card, Breadcrumbs, Link } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import shuffle from 'lodash.shuffle';
 import { apiUrl, routes, methods } from '../../../constants';
 import Label from '../../../components/label';
-import Iconify from '../../../components/iconify'; // Assuming you reuse the styled component from BookPage
 import BorrowalForm from '../borrowal/BorrowalForm';
-
-// ----------------------------------------------------------------------
+import BorrowalFormForUser from '../borrowal/BorowalFormForUser';
+import { useAuth } from '../../../hooks/useAuth';
+import ImageGallery from 'react-image-gallery';
+import 'react-image-gallery/styles/css/image-gallery.css';
 
 const TruncatedTypography = styled(Typography)({
   color: 'black',
 });
 
 const BookDetails = () => {
+  const { user } = useAuth();
+  console.log(user);
+
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [book, setBook] = useState(null);
+  const [author, setAuthor] = useState(null);
+  const [genre, setGenre] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [relatedBooks, setRelatedBooks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBorrowalModalOpen, setIsBorrowalModalOpen] = useState(false);
+  const [selectedBookId, setSelectedBookId] = useState(null);
+  const [review, setReview] = useState('');
+
   const [borrowal, setBorrowal] = useState({
     bookId: '',
     memberId: '',
@@ -24,19 +41,6 @@ const BookDetails = () => {
     dueDate: '',
     status: '',
   });
-
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [book, setBook] = useState(null);
-  const [author, setAuthor] = useState(null);
-  const [genre, setGenre] = useState(null);
-  const [user, setUser] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isBorrowalModalOpen, setIsBorrowalModalOpen] = useState(false);
-  const [selectedBookId, setSelectedBookId] = useState(null);
-
-  const [review, setReview] = useState('');
 
   const getBook = useCallback(() => {
     setIsLoading(true);
@@ -48,13 +52,20 @@ const BookDetails = () => {
         return Promise.all([
           axios.get(apiUrl(routes.AUTHOR, methods.GET, bookData.authorId), { withCredentials: true }),
           axios.get(apiUrl(routes.GENRE, methods.GET, bookData.genreId), { withCredentials: true }),
-          // axios.get(apiUrl(routes.REVIEW, methods.GET, { bookId: id }), { withCredentials: true }),
         ]);
       })
-      .then(([authorResponse, genreResponse, reviewResponse]) => {
+      .then(([authorResponse, genreResponse]) => {
         setAuthor(authorResponse.data.author);
         setGenre(genreResponse.data.genre);
-        // setReviews(reviewResponse.data.reviews);
+        // Fetch related books
+        return axios.get(apiUrl(routes.BOOKS_BY_GENRE, methods.GET, genreResponse.data.genre._id), {
+          withCredentials: true,
+        });
+      })
+      .then((relatedBooksResponse) => {
+        const relatedBooks = relatedBooksResponse.data.books.filter((b) => b._id !== id);
+        const shuffledBooks = shuffle(relatedBooks).slice(0, 5);
+        setRelatedBooks(shuffledBooks);
         setIsLoading(false);
       })
       .catch((error) => {
@@ -64,22 +75,9 @@ const BookDetails = () => {
       });
   }, [id]);
 
-  const getUser = useCallback(() => {
-    axios
-      .get(apiUrl(routes.USER, methods.GET, id), { withCredentials: true })
-      .then((response) => {
-        setUser(response.data.user);
-      })
-      .catch((error) => {
-        console.error('Error fetching user details:', error);
-        toast.error('Failed to fetch user details');
-      });
-  }, [id]);
-
   useEffect(() => {
     getBook();
-    getUser();
-  }, [getBook, getUser]);
+  }, [getBook]);
 
   const addBorrowal = () => {
     axios
@@ -98,7 +96,7 @@ const BookDetails = () => {
   const addReview = () => {
     const reviewData = {
       book: id,
-      reviewedBy: user._id,
+      reviewedBy: user?._id,
       review,
       reviewedAt: new Date(),
     };
@@ -114,6 +112,33 @@ const BookDetails = () => {
         toast.error('Failed to add review');
       });
   };
+
+  if (isLoading) {
+    return (
+      <Container>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  if (!book || !author || !genre) {
+    return (
+      <Container>
+        <Typography variant="h5">Book not found</Typography>
+      </Container>
+    );
+  }
+
+  const images = [
+    {
+      original: book.photoUrl,
+      thumbnail: book.photoUrl,
+    },
+    ...book.pageUrls.map((url) => ({
+      original: url,
+      thumbnail: url,
+    })),
+  ];
 
   const backToBookPage = () => {
     navigate('/books');
@@ -137,35 +162,32 @@ const BookDetails = () => {
     });
   };
 
-  if (isLoading) {
-    return (
-      <Container>
-        <CircularProgress />
-      </Container>
-    );
-  }
-
-  if (!book || !author || !genre) {
-    return (
-      <Container>
-        <Typography variant="h5">Book not found</Typography>
-      </Container>
-    );
-  }
-
   return (
     <Container>
       <Helmet>
         <title>{book.name} - Book Details</title>
       </Helmet>
 
+      <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+        <Link component={RouterLink} to="/">
+          Dashboard
+        </Link>
+        <Link component={RouterLink} to="/books">
+          Books
+        </Link>
+        <Link component={RouterLink} to={`/books/genres/${genre.name}`}>
+          {genre.name}
+        </Link>
+        <Typography color="text.primary">{book.name}</Typography>
+      </Breadcrumbs>
+
       <Button variant="outlined" color="primary" onClick={backToBookPage} sx={{ mb: 2 }}>
         Back to Books
       </Button>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={4}>
-          <img alt={book.name} src={book.photoUrl} style={{ width: '100%', height: 'auto' }} />
+      <Grid item xs={12} sm={4}>
+          <ImageGallery items={images} />
         </Grid>
         <Grid item xs={12} sm={8} style={{ paddingLeft: '3rem' }}>
           <Box>
@@ -173,7 +195,11 @@ const BookDetails = () => {
             <Label color={book.isAvailable ? 'success' : 'error'} sx={{ mt: 1, mb: 2 }}>
               {book.isAvailable ? 'Available' : 'Not available'}
             </Label>
-            <Typography variant="subtitle1" sx={{ color: '#888888', mt: 2, display: 'flex', alignItems: 'center' }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ color: '#888888', mt: 2, display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => navigate(`/author/${author._id}`)}
+            >
               <Avatar alt={author.name} src={author.photoUrl} /> {author.name}
             </Typography>
             <Box sx={{ position: 'relative', mt: 2 }}>
@@ -206,11 +232,15 @@ const BookDetails = () => {
         </Grid>
       </Grid>
       <Grid container spacing={2} sx={{ mt: 4 }}>
-        <Typography variant="h6" sx={{ mt: 2 }}>Write a Review</Typography>
-        <Grid item xs={12} style={{ paddingLeft: "3rem" }}>
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Write a Review
+        </Typography>
+        <Grid item xs={12} style={{ paddingLeft: '3rem' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Avatar alt={user?.name} src={user?.photoUrl} sx={{ mr: 2 }} />
-            <Typography variant="subtitle1" sx={{ color: '#888888' }}>{user?.name}</Typography>
+            <Typography variant="subtitle1" sx={{ color: '#888888' }}>
+              {user?.name}
+            </Typography>
           </Box>
           <TextField
             id="standard-basic"
@@ -221,35 +251,58 @@ const BookDetails = () => {
             value={review}
             onChange={(e) => setReview(e.target.value)}
             sx={{ mt: 2 }}
-          />
-          <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={addReview}>
-            Submit Review
-          </Button>
+            />
+            <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={addReview}>
+              Submit Review
+            </Button>
+          </Grid>
         </Grid>
-      </Grid>
-      {/* <Box sx={{ mt: 4 }}>
-        <Typography variant="h6">Reviews</Typography>
-        {reviews.map((rev) => (
-          <Box key={rev._id} sx={{ mt: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Avatar alt={rev.reviewedBy.name} src={rev.reviewedBy.photoUrl} sx={{ mr: 2 }} />
-              <Typography variant="subtitle1" sx={{ color: '#888888' }}>{rev.reviewedBy.name}</Typography>
-            </Box>
-            <Typography variant="body1" sx={{ color: '#000000' }}>{rev.review}</Typography>
-            <Divider sx={{ mt: 2 }} />
-          </Box>
-        ))}
-      </Box> */}
-      <BorrowalForm
-        isModalOpen={isBorrowalModalOpen}
-        handleCloseModal={handleCloseBorrowalModal}
-        id={selectedBookId}
-        borrowal={borrowal}
-        setBorrowal={setBorrowal}
-        handleAddBorrowal={addBorrowal}
-      />
-    </Container>
-  );
-};
+        <Grid container spacing={2} sx={{ mt: 4 }}>
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Related Books
+          </Typography>
+          {relatedBooks.map((relatedBook) => (
+            <Grid item xs={12} sm={2} key={relatedBook._id} style={{ paddingLeft: '3rem' }}>
+              <Card>
+                <Box sx={{ position: 'relative' }}>
+                  <img alt={relatedBook.name} src={relatedBook.photoUrl} style={{ width: '100%', height: 'auto' }} />
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mt: 2, textAlign: 'center', cursor: 'pointer' }}
+                    onClick={() => navigate(`/books/${relatedBook._id}`)}
+                  >
+                    {relatedBook.name}
+                  </Typography>
+                </Box>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
 
-export default BookDetails;
+        {user && (user.isAdmin || user.isLibrarian) ? (
+          <BorrowalForm
+          isModalOpen={isBorrowalModalOpen}
+          handleCloseModal={handleCloseBorrowalModal}
+          id={selectedBookId}
+          borrowal={borrowal}
+          setBorrowal={setBorrowal}
+          handleAddBorrowal={addBorrowal}
+          bookName = {book.name}
+          />
+        ) : (
+          <BorrowalFormForUser
+          isModalOpen={isBorrowalModalOpen}
+          handleCloseModal={handleCloseBorrowalModal}
+          id={selectedBookId}
+          borrowal={borrowal}
+          setBorrowal={setBorrowal}
+          handleAddBorrowal={addBorrowal}
+          bookName = {book.name}
+          />
+        )}
+      </Container>
+    );
+  };
+
+  export default BookDetails;
+

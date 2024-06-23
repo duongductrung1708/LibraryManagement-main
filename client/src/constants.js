@@ -7,7 +7,9 @@ const routes = {
   REVIEW: "review",
   BORROWAL: "borrowal",
   GENRE: "genre",
-  USER: "user"
+  USER: "user",
+  BOOKS_BY_GENRE: 'book/genre',
+  BOOKS_BY_AUTHOR: 'book/author',
 };
 
 const methods = {
@@ -16,7 +18,8 @@ const methods = {
   POST: "add",
   PUT: "update",
   DELETE: "delete",
-  UPLOAD: "upload"
+  UPLOAD: "upload",
+  IMPORT: "import",
 };
 
 const apiUrl = (route, method, id = "") => `${backendApiUrl}/${route}/${method}${id && `/${id}`}`;

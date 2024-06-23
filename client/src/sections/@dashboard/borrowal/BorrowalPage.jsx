@@ -36,6 +36,7 @@ import Scrollbar from '../../../components/scrollbar';
 
 import BorrowalListHead from './BorrowalListHead';
 import BorrowalForm from './BorrowalForm';
+import BorrowalFormForUser from "./BorowalFormForUser"
 import BorrowalsDialog from './BorrowalDialog';
 import { applySortFilter, getComparator } from '../../../utils/tableOperations';
 import { apiUrl, methods, routes } from '../../../constants';
@@ -45,6 +46,7 @@ import { apiUrl, methods, routes } from '../../../constants';
 const TABLE_HEAD = [
   { id: 'memberName', label: 'Member Name', alignRight: false },
   { id: 'bookName', label: 'Book Name', alignRight: false },
+  { id: 'RequestDate', label: 'Request On', alignRight: false },
   { id: 'borrowedDate', label: 'Borrowed On', alignRight: false },
   { id: 'dueDate', label: 'Due On', alignRight: false },
   { id: 'status', label: 'Status', alignRight: false },
@@ -70,6 +72,7 @@ const BorrowalPage = () => {
     borrowedDate: '',
     dueDate: '',
     status: '',
+    overdue: false,
   });
   const [borrowals, setBorrowals] = useState([]);
   const [selectedBorrowalId, setSelectedBorrowalId] = useState(null);
@@ -300,62 +303,82 @@ const BorrowalPage = () => {
         ) : (
           <Card>
             <Scrollbar>
-              {filteredBorrowals.length > 0 ? (
-                <TableContainer sx={{ minWidth: 800 }}>
-                  <Table>
-                    <BorrowalListHead
-                      order={order}
-                      orderBy={orderBy}
-                      headLabel={TABLE_HEAD}
-                      rowCount={filteredBorrowals.length}
-                      onRequestSort={handleRequestSort}
-                    />
-                    <TableBody>
-                      {filteredBorrowals
-                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                        .map((borrowal) => (
-                          <TableRow hover key={borrowal._id} tabIndex={-1}>
-                            <TableCell align="left"> {borrowal.member.name} </TableCell>
-                            <TableCell align="left">{borrowal.book.name}</TableCell>
-                            <TableCell align="left">
-                              {' '}
-                              {new Date(borrowal.borrowedDate).toLocaleDateString('en-US')}{' '}
-                            </TableCell>
-                            <TableCell align="left">
-                              {new Date(borrowal.dueDate).toLocaleDateString('en-US')}
-                            </TableCell>
-                            <TableCell align="left" style={{ textTransform: 'uppercase' }}>
-                              {getStatusIcon(borrowal.status)} {borrowal.status}
-                            </TableCell>
-                            <TableCell align="left">
-                              {new Date(borrowal.dueDate) < new Date() && (
-                                <Label color="error" sx={{ padding: 2 }}>
-                                  Overdue
-                                </Label>
-                              )}
-                            </TableCell>
-                            <TableCell align="right">
-                              <IconButton
-                                size="large"
-                                color="inherit"
-                                onClick={(e) => {
-                                  setSelectedBorrowalId(borrowal._id);
-                                  handleOpenMenu(e);
-                                }}
-                              >
-                                <Iconify icon={'eva:more-vertical-fill'} />
-                              </IconButton>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Alert severity="warning" color="warning">
-                  No borrowals found
-                </Alert>
-              )}
+            {filteredBorrowals.length > 0 ? (
+              <TableContainer sx={{ minWidth: 800 }}>
+                <Table>
+                  <BorrowalListHead
+                    order={order}
+                    orderBy={orderBy}
+                    headLabel={TABLE_HEAD}
+                    rowCount={filteredBorrowals.length}
+                    onRequestSort={handleRequestSort}
+                  />
+                  <TableBody>
+  {filteredBorrowals
+    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+    .map((borrowal) => {
+      // Kiểm tra và đặt thuộc tính overdue
+      const isOverdue = borrowal.dueDate && new Date(borrowal.dueDate) < new Date();
+      borrowal.overdue = isOverdue ? true : borrowal.dueDate ? false : 'no data';
+      
+      return (
+        <TableRow hover key={borrowal._id} tabIndex={-1}>
+          <TableCell align="left">{borrowal.member.name}</TableCell>
+          <TableCell align="left">{borrowal.book.name}</TableCell>
+          <TableCell align="left">
+            {new Date(borrowal.requestDate).toLocaleDateString('en-US')}
+          </TableCell>
+          <TableCell align="left">
+            {borrowal.status === 'pending' || borrowal.status === 'rejected'
+              ? 'none'
+              : new Date(borrowal.borrowedDate).toLocaleDateString('en-US')}
+          </TableCell>
+          <TableCell align="left">
+            {borrowal.status === 'pending' || borrowal.status === 'rejected'
+              ? 'none'
+              : borrowal.dueDate
+              ? new Date(borrowal.dueDate).toLocaleDateString('en-US')
+              : 'No Data'}
+          </TableCell>
+          <TableCell align="left" style={{ textTransform: 'uppercase' }}>
+            {getStatusIcon(borrowal.status)} {borrowal.status}
+          </TableCell>
+          <TableCell align="left">
+            {borrowal.overdue === true && (
+              <Label color="error" sx={{ padding: 2 }}>
+                Overdue
+              </Label>
+            )}
+            {borrowal.overdue === 'no data' && (
+              <Label color="warning" sx={{ padding: 2 }}>
+                No Data
+              </Label>
+            )}
+          </TableCell>
+          <TableCell align="right">
+            <IconButton
+              size="large"
+              color="inherit"
+              onClick={(e) => {
+                setSelectedBorrowalId(borrowal._id);
+                handleOpenMenu(e);
+              }}
+            >
+              <Iconify icon={'eva:more-vertical-fill'} />
+            </IconButton>
+          </TableCell>
+        </TableRow>
+      );
+    })}
+</TableBody>
+
+                </Table>
+              </TableContainer>
+            ) : (
+              <Alert severity="warning" color="warning">
+                No borrowals found
+              </Alert>
+            )}
             </Scrollbar>
             {filteredBorrowals.length > 0 && (
               <TablePagination
@@ -408,16 +431,30 @@ const BorrowalPage = () => {
         </MenuItem>
       </Popover>
 
-      <BorrowalForm
-        isUpdateForm={isUpdateForm}
-        isModalOpen={isModalOpen}
-        handleCloseModal={handleCloseModal}
-        id={selectedBorrowalId}
-        borrowal={borrowal}
-        setBorrowal={setBorrowal}
-        handleAddBorrowal={addBorrowal}
-        handleUpdateBorrowal={updateBorrowal}
-      />
+      {user.isAdmin || user.isLibrarian ? (
+        <BorrowalForm
+          isUpdateForm={isUpdateForm}
+          isModalOpen={isModalOpen}
+          handleCloseModal={handleCloseModal}
+          id={selectedBorrowalId}
+          borrowal={borrowal}
+          setBorrowal={setBorrowal}
+          handleAddBorrowal={addBorrowal}
+          handleUpdateBorrowal={updateBorrowal}
+        />
+      ) : (
+        <BorrowalFormForUser
+          isUpdateForm={isUpdateForm}
+          isModalOpen={isModalOpen}
+          handleCloseModal={handleCloseModal}
+          id={selectedBorrowalId}
+          borrowal={borrowal}
+          setBorrowal={setBorrowal}
+          handleAddBorrowal={addBorrowal}
+          handleUpdateBorrowal={updateBorrowal}
+        />
+      )}
+      
 
       <BorrowalsDialog
         isDialogOpen={isDialogOpen}

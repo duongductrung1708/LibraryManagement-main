@@ -20,18 +20,18 @@ import {
 import PropTypes from "prop-types";
 import axios from "axios";
 import toast from "react-hot-toast";
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import Iconify from "../../../components/iconify";
 
 const BookForm = ({
-                    isUpdateForm,
-                    isModalOpen,
-                    handleCloseModal,
-                    book,
-                    setBook,
-                    handleAddBook,
-                    handleUpdateBook
-                  }) => {
+  isUpdateForm,
+  isModalOpen,
+  handleCloseModal,
+  book,
+  setBook,
+  handleAddBook,
+  handleUpdateBook
+}) => {
 
   const [isModalLoading, setIsModalLoading] = useState(true)
   const [authors, setAuthors] = useState([]);
@@ -66,6 +66,33 @@ const BookForm = ({
       })
   }
 
+  const parsePageUrls = (pageUrlsString) => {
+    // check string before split 
+    if (typeof pageUrlsString === 'string') {
+      return pageUrlsString.split(';').map(url => url.trim());
+    }
+    return [];
+  };
+
+  const handleSubmit = () => {
+    const payload = { ...book, pageUrls: book.pageUrls };
+
+    console.log("Payload:", payload);
+
+    if (isUpdateForm) {
+      handleUpdateBook(payload);
+    } else {
+      handleAddBook(payload);
+    }
+  };
+
+
+  const handlePageUrlsChange = (event) => {
+    const pageUrlsString = event.target.value;
+    const pageUrlsArray = parsePageUrls(pageUrlsString);
+    setBook({ ...book, pageUrls: pageUrlsArray });
+  };
+
   // Load data on initial page load
   useEffect(() => {
     getAllAuthors();
@@ -99,43 +126,45 @@ const BookForm = ({
           </Typography>
 
           {
-            isModalLoading ? <Grid padding={4} style={{"textAlign": "center"}}><CircularProgress/></Grid> :
+            isModalLoading ? <Grid padding={4} style={{ "textAlign": "center" }}><CircularProgress /></Grid> :
               <Stack spacing={3} paddingY={2} paddingX={3}
-                     height="600px"
-                     overflow="scroll">
+                height="600px"
+                overflow="scroll">
 
                 <TextField name="name" label="Book name" value={book.name} autoFocus required
-                           onChange={(e) => setBook({...book, name: e.target.value})}/>
+                  onChange={(e) => setBook({ ...book, name: e.target.value })} />
                 <TextField name="isbn" label="ISBN" value={book.isbn} required
-                           onChange={(e) => setBook({...book, isbn: e.target.value})}/>
+                  onChange={(e) => setBook({ ...book, isbn: e.target.value })} />
+                <TextField name="position" label="Book position" value={book.position} autoFocus required
+                  onChange={(e) => setBook({ ...book, position: e.target.value })} />
 
-                <FormControl sx={{m: 1}}>
+                <FormControl sx={{ m: 1 }}>
                   <InputLabel id="author-label">Author</InputLabel>
                   <Select
                     labelId="author-label"
                     id="author"
                     value={book.authorId}
                     label="Author"
-                    onChange={(e) => setBook({...book, authorId: e.target.value})}>
+                    onChange={(e) => setBook({ ...book, authorId: e.target.value })}>
                     {
                       authors.map((author) => <MenuItem key={author._id} value={author._id}>{author.name}</MenuItem>)
                     }
                   </Select>
                 </FormControl>
-                <FormControl sx={{m: 1, minWidth: 120}}>
+
+                <FormControl sx={{ m: 1, minWidth: 120 }}>
                   <InputLabel id="genre-label">Genre</InputLabel>
                   <Select
                     labelId="genre-label"
                     id="genre"
                     value={book.genreId}
                     label="Genre"
-                    onChange={(e) => setBook({...book, genreId: e.target.value})}>
+                    onChange={(e) => setBook({ ...book, genreId: e.target.value })}>
                     {
                       genres.map((genre) => <MenuItem key={genre._id} value={genre._id}>{genre.name}</MenuItem>)
                     }
                   </Select>
                 </FormControl>
-
 
                 <FormControl>
                   <FormLabel id="available-label">Availability</FormLabel>
@@ -143,17 +172,17 @@ const BookForm = ({
                     aria-labelledby="available-label"
                     defaultValue={book.isAvailable}
                     name="radio-buttons-group"
-                    onChange={(e) => setBook({...book, isAvailable: e.target.value})}
+                    onChange={(e) => setBook({ ...book, isAvailable: e.target.value })}
                   >
-                    <FormControlLabel value control={<Radio/>} label="Available"/>
-                    <FormControlLabel value={false} control={<Radio/>} label="Not available"/>
+                    <FormControlLabel value control={<Radio />} label="Available" />
+                    <FormControlLabel value={false} control={<Radio />} label="Not available" />
                   </RadioGroup>
                 </FormControl>
 
                 <TextField name="summary" label="Summary" value={book.summary} multiline
-                           rows={2}
-                           maxRows={4}
-                           onChange={(e) => setBook({...book, summary: e.target.value})}
+                  rows={2}
+                  maxRows={4}
+                  onChange={(e) => setBook({ ...book, summary: e.target.value })}
                 />
 
                 {/* <Button
@@ -171,17 +200,31 @@ const BookForm = ({
                 </Button> */}
 
                 <TextField name="photoURL" label="photoURL" value={book.photoUrl} required
-                           onChange={(e) => setBook({...book, photoUrl: e.target.value})}/>
+                  onChange={(e) => setBook({ ...book, photoUrl: e.target.value })} />
 
-                <br/>
+                {/* <TextField name="pageUrls" label="pageUrls" value={book.pageUrls} required
+                  onChange={(e) => setBook({ ...book, pageUrls: e.target.value })} /> */}
+
+                <TextField
+                  name="pageUrls"
+                  label="Page URLs (semicolon separated)"
+                  value={book.pageUrls.join('; ')}
+                  required
+                  onChange={handlePageUrlsChange}
+                />
+                <pre>{JSON.stringify(book.pageUrls, null, 2)}</pre>
+                <br />
+
                 <Box textAlign="center" paddingBottom={2}>
-                  <Button size="large" variant="contained" onClick={isUpdateForm ? handleUpdateBook : handleAddBook}
-                          startIcon={<Iconify icon="bi:check-lg"/>} style={{marginRight: "12px"}}>
+                  <Button size="large" variant="contained"
+                    // onClick={isUpdateForm ? handleUpdateBook : handleAddBook}
+                    onClick={handleSubmit}
+                    startIcon={<Iconify icon="bi:check-lg" />} style={{ marginRight: "12px" }}>
                     Submit
                   </Button>
 
                   <Button size="large" color="inherit" variant="contained" onClick={handleCloseModal}
-                          startIcon={<Iconify icon="charm:cross"/>} style={{marginLeft: "12px"}}>
+                    startIcon={<Iconify icon="charm:cross" />} style={{ marginLeft: "12px" }}>
                     Cancel
                   </Button>
                 </Box>
@@ -200,7 +243,7 @@ BookForm.propTypes = {
   book: PropTypes.object,
   setBook: PropTypes.func,
   handleAddBook: PropTypes.func,
-  handleUpdateBook: PropTypes.func
+  handleUpdateBook: PropTypes.func,
 };
 
 export default BookForm

@@ -2,7 +2,6 @@ import { Helmet } from 'react-helmet-async';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-
 import { Alert } from '@mui/lab';
 import {
   Avatar,
@@ -26,16 +25,15 @@ import {
   Typography,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-
 import Iconify from '../../../components/iconify';
 import Scrollbar from '../../../components/scrollbar';
 import Label from '../../../components/label';
-
 import UserTableHead from './UserListHead';
 import UserForm from './UserForm';
 import UserDialog from './UserDialog';
 import { applySortFilter, getComparator } from '../../../utils/tableOperations';
 import { apiUrl, methods, routes } from '../../../constants';
+import ImportUsersModal from './ImportUsersModal';
 
 // ----------------------------------------------------------------------
 
@@ -53,7 +51,6 @@ const TABLE_HEAD = [
 
 const UserPage = () => {
   // State variables
-  // Table
   const [page, setPage] = useState(0);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('name');
@@ -78,26 +75,24 @@ const UserPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateForm, setIsUpdateForm] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  // Load data on initial page load
   useEffect(() => {
     getAllUsers();
   }, []);
 
-  // API operations
-
   const getAllUsers = () => {
+    setIsTableLoading(true);
     axios
       .get(apiUrl(routes.USER, methods.GET_ALL))
       .then((response) => {
-        // handle success
-        console.log(response.data);
         setUsers(response.data.usersList);
         setIsTableLoading(false);
       })
       .catch((error) => {
-        // handle error
-        console.log(error);
+        console.error(error);
+        toast.error('Failed to fetch users');
+        setIsTableLoading(false);
       });
   };
 
@@ -105,17 +100,16 @@ const UserPage = () => {
     axios
       .post(apiUrl(routes.USER, methods.POST), user)
       .then((response) => {
-        console.log(response.data);
         toast.success('User added');
         handleCloseModal();
         getAllUsers();
         clearForm();
       })
       .catch((error) => {
-        if (error.response.status === 403) {
+        if (error.response?.status === 403) {
           toast.error('User already exists');
         } else {
-          console.log(error);
+          console.error(error);
           toast.error('Something went wrong, please try again');
         }
       });
@@ -125,7 +119,6 @@ const UserPage = () => {
     axios
       .put(apiUrl(routes.USER, methods.PUT, selectedUserId), user)
       .then((response) => {
-        console.log(response.data);
         toast.success('User updated');
         handleCloseModal();
         handleCloseMenu();
@@ -133,7 +126,7 @@ const UserPage = () => {
         clearForm();
       })
       .catch((error) => {
-        console.log(error);
+        console.error(error);
         toast.error('Something went wrong, please try again');
       });
   };
@@ -145,11 +138,10 @@ const UserPage = () => {
         toast.success('User deleted');
         handleCloseDialog();
         handleCloseMenu();
-        console.log(response.data);
         getAllUsers();
       })
       .catch((error) => {
-        console.log(error);
+        console.error(error);
         toast.error('Something went wrong, please try again');
       });
   };
@@ -172,7 +164,6 @@ const UserPage = () => {
     });
   };
 
-  // Handler functions
   const handleOpenMenu = (event) => {
     setIsMenuOpen(event.currentTarget);
   };
@@ -216,6 +207,14 @@ const UserPage = () => {
     setIsModalOpen(false);
   };
 
+  const handleOpenImportModal = () => {
+    setIsImportModalOpen(true);
+  };
+
+  const handleCloseImportModal = () => {
+    setIsImportModalOpen(false);
+  };
+
   const filteredUsers = applySortFilter(users, getComparator(order, orderBy), filterName);
 
   return (
@@ -229,6 +228,7 @@ const UserPage = () => {
           <Typography variant="h3" gutterBottom>
             Users
           </Typography>
+          <Grid style={{display: "flex", flexDirection: "column"}}>
           <Button
             variant="contained"
             onClick={() => {
@@ -239,6 +239,17 @@ const UserPage = () => {
           >
             New User
           </Button>
+          <Button
+          style={{ marginTop: "5px"}}
+            variant="contained"
+            onClick={() => {
+              handleOpenImportModal();
+            }}
+            startIcon={<Iconify icon="eva:plus-fill" />}
+          >
+            Import New User
+          </Button>
+          </Grid>
         </Stack>
 
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
@@ -388,6 +399,7 @@ const UserPage = () => {
         handleDeleteUser={deleteUser}
         handleCloseDialog={handleCloseDialog}
       />
+      <ImportUsersModal isOpen={isImportModalOpen} onClose={handleCloseImportModal} />
     </>
   );
 };

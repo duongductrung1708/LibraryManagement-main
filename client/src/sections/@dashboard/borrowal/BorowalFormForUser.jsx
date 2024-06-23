@@ -11,19 +11,14 @@ import {
   InputLabel,
   MenuItem,
   Modal,
-  Select,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import ReplayIcon from '@mui/icons-material/Replay';
 import Iconify from '../../../components/iconify';
 import { useAuth } from '../../../hooks/useAuth';
 
-const BorrowalForm = ({
+const BorrowalFormForUser = ({
   handleAddBorrowal,
   handleUpdateBorrowal,
   isUpdateForm,
@@ -31,15 +26,13 @@ const BorrowalForm = ({
   handleCloseModal,
   borrowal,
   setBorrowal,
-  bookName,
-  id
+  id,
+  bookName
 }) => {
   const { user } = useAuth();
   const [members, setMembers] = useState([]);
   const [books, setBooks] = useState([]);
   const [availableBooks, setAvailableBooks] = useState([]);
-
-  console.log(borrowal);
 
   const getAllMembers = useCallback(() => {
     axios
@@ -92,35 +85,6 @@ const BorrowalForm = ({
     }
   }, [setBorrowal, isUpdateForm, id]);
 
-  useEffect(() => {
-    if (!user.isAdmin && !user.isLibrarian) {
-      setBorrowal((prev) => ({
-        ...prev,
-        borrowedDate: new Date().toISOString(),
-        dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(), // Assuming a default due date 7 days from borrowed date
-        status: 'pending',
-      }));
-    }
-  }, [user, setBorrowal]);
-
-  const handleDateChange = (field, value) => {
-    const isoDate = new Date(value).toISOString();
-    setBorrowal((prev) => ({ ...prev, [field]: isoDate }));
-  };
-
-  const handleSubmit = () => {
-    if (isUpdateForm) {
-      handleUpdateBorrowal();
-    } else {
-      // Check required fields before adding new borrowal
-      if (!borrowal.memberId || !borrowal.bookId || !borrowal.borrowedDate || !borrowal.dueDate || !borrowal.status) {
-        toast.error('Please fill in all required fields.');
-        return;
-      }
-      handleAddBorrowal();
-    }
-  };
-
   const style = {
     position: 'absolute',
     top: '50%',
@@ -134,6 +98,22 @@ const BorrowalForm = ({
   };
 
   const isAdminOrLibrarian = user.isAdmin || user.isLibrarian;
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setBorrowal((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = () => {
+    if (isUpdateForm) {
+      handleUpdateBorrowal();
+    } else {
+      handleAddBorrowal();
+    }
+  };
 
   return (
     <Modal
@@ -151,32 +131,22 @@ const BorrowalForm = ({
             <Grid container spacing={0} sx={{ paddingBottom: '4px' }}>
               <Grid item xs={12} md={6} paddingRight={1}>
                 <FormControl sx={{ m: 0 }} fullWidth>
-                  <InputLabel id="member-label">Member</InputLabel>
-                  <Select
-                    required
-                    disabled={!isAdminOrLibrarian}
-                    labelId="member-label"
-                    id="member"
-                    value={borrowal.memberId}
-                    label="Member"
-                    onChange={(e) => setBorrowal({ ...borrowal, memberId: e.target.value })}
-                  >
-                    {members.map((member) => (
-                      <MenuItem key={member._id} value={member._id}>
-                        {member.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
+                <Typography variant="subtitle1" id="member-label" aria-describedby="member-label" paddingBottom={1}>
+                Member
+              </Typography>
+              <Typography variant="body1" id="member-name">
+                {user.name}
+              </Typography>
                 </FormControl>
               </Grid>
               <Grid item xs={12} md={6} paddingLeft={1}>
                 <FormControl sx={{ m: 0 }} fullWidth>
-                  <Typography variant="subtitle1" id="book-label" aria-describedby="book-label">
-                    Book
-                  </Typography>
-                  <Typography variant="body1" id="book-name">
-                    {bookName}
-                  </Typography>
+                <Typography variant="subtitle1" id="member-label" aria-describedby="member-label" paddingBottom={1}>
+                Member
+              </Typography>
+              <Typography variant="body1" id="member-name">
+                {bookName}
+              </Typography>
                 </FormControl>
               </Grid>
             </Grid>
@@ -185,55 +155,17 @@ const BorrowalForm = ({
               <Grid item xs={12} md={6} paddingRight={1}>
                 <TextField
                   fullWidth
-                  name="borrowedDate"
-                  label="Borrowed date"
+                  name="requestDate"
+                  label="Request date"
                   type="date"
-                  value={borrowal.borrowedDate ? new Date(borrowal.borrowedDate).toISOString().split('T')[0] : ''}
+                  value={borrowal.requestDate}
                   required
                   InputLabelProps={{ shrink: true }}
-                  onChange={(e) => handleDateChange('borrowedDate', e.target.value)}
-                  disabled={!isAdminOrLibrarian}
-                />
-              </Grid>
-              <Grid item xs={12} md={6} paddingLeft={1}>
-                <TextField
-                  fullWidth
-                  name="dueDate"
-                  label="Due date"
-                  type="date"
-                  value={borrowal.dueDate ? new Date(borrowal.dueDate).toISOString().split('T')[0] : ''}
-                  required
-                  InputLabelProps={{ shrink: true }}
-                  onChange={(e) => handleDateChange('dueDate', e.target.value)}
-                  disabled={!isAdminOrLibrarian}
+                  onChange={(e) => setBorrowal({ ...borrowal, requestDate: e.target.value })}
+                  disabled={isAdminOrLibrarian}
                 />
               </Grid>
             </Grid>
-
-            <FormControl sx={{ m: 0 }} fullWidth>
-              <InputLabel id="status-label">Status</InputLabel>
-              <Select
-                labelId="status-label"
-                id="status"
-                value={borrowal.status}
-                label="Status"
-                onChange={(e) => setBorrowal({ ...borrowal, status: e.target.value })}
-                disabled={!isAdminOrLibrarian}
-              >
-                <MenuItem value="pending">
-                  <HourglassEmptyIcon style={{ marginRight: 8 }} /> Pending
-                </MenuItem>
-                <MenuItem value="accepted">
-                  <CheckCircleIcon style={{ marginRight: 8 }} /> Accepted
-                </MenuItem>
-                <MenuItem value="rejected">
-                  <CancelIcon style={{ marginRight: 8 }} /> Rejected
-                </MenuItem>
-                <MenuItem value="returned">
-                  <ReplayIcon style={{ marginRight: 8 }} /> Returned
-                </MenuItem>
-              </Select>
-            </FormControl>
 
             <br />
             <Box textAlign="center">
@@ -267,7 +199,7 @@ const BorrowalForm = ({
   );
 };
 
-BorrowalForm.propTypes = {
+BorrowalFormForUser.propTypes = {
   isUpdateForm: PropTypes.bool,
   isModalOpen: PropTypes.bool,
   handleCloseModal: PropTypes.func,
@@ -275,8 +207,8 @@ BorrowalForm.propTypes = {
   setBorrowal: PropTypes.func,
   handleAddBorrowal: PropTypes.func,
   handleUpdateBorrowal: PropTypes.func,
+  id: PropTypes.string,
   bookName: PropTypes.string,
-  id: PropTypes.string
 };
 
-export default BorrowalForm;
+export default BorrowalFormForUser;

@@ -6,7 +6,6 @@ const getBook = async (req, res, next) => {
   try {
     const bookId = req.params.id;
 
-    // Cannot find book with in invalid bookID
     if (!mongoose.Types.ObjectId.isValid(bookId)) {
       return res.status(400).json({
         success: false,
@@ -29,8 +28,6 @@ const getBook = async (req, res, next) => {
     });
   } catch (err) {
     console.error(err); 
-
-    // Other error handling
     return next(err);
   }
 };
@@ -77,7 +74,6 @@ const getAllBooks = async (req, res, next) => {
     console.error(err); 
 
     if (err.name === 'MongoNetworkError') {
-      // Cannot connect to database
       return res.status(503).json({
         success: false,
         message: "Service unavailable. Please try again later.",
@@ -85,14 +81,12 @@ const getAllBooks = async (req, res, next) => {
       });
     }
     if (err.name === 'MongoError') {
-      // MongoDB error
       return res.status(500).json({
         success: false,
         message: "An error occurred with the database.",
         error: err.message
       });
     }
-    // Others
     return res.status(400).json({
       success: false,
       message: "An error occurred while retrieving the books.",
@@ -112,6 +106,8 @@ const addBook = async (req, res, next) => {
       isAvailable: req.body.isAvailable,
       summary: req.body.summary,
       photoUrl: req.body.photoUrl,
+      pageUrls: req.body.pageUrls || [],
+      position: req.body.position,
     };
 
     console.log(newBookData);
@@ -125,7 +121,6 @@ const addBook = async (req, res, next) => {
     });
   } catch (err) {
     if (err.name === 'ValidationError') {
-      // Database cannot validated
       return res.status(400).json({
         success: false,
         message: "Validation error",
@@ -133,14 +128,12 @@ const addBook = async (req, res, next) => {
       });
     }
     if (err.name === 'MongoError' && err.code === 11000) {
-      // Duplicate key error
       return res.status(409).json({
         success: false,
         message: "Duplicate key error",
         error: err.message,
       });
     }
-    // Other errors
     return next(err);
   }
 };
@@ -151,7 +144,6 @@ const updateBook = async (req, res, next) => {
     const bookId = req.params.id;
     const updatedBook = req.body;
 
-    // Cannot find book with in invalid bookID
     if (!mongoose.Types.ObjectId.isValid(bookId)) {
       return res.status(400).json({
         success: false,
@@ -176,14 +168,12 @@ const updateBook = async (req, res, next) => {
     console.error(err);
 
     if (err.name === 'ValidationError') {
-      // Database cannot validated
       return res.status(400).json({
         success: false,
         message: "Validation error",
         error: err.message,
       });
     }
-    // Others
     return next(err);
   }
 };
@@ -193,7 +183,6 @@ const deleteBook = async (req, res, next) => {
   try {
     const bookId = req.params.id;
 
-    // Cannot find book with in invalid bookID
     if (!mongoose.Types.ObjectId.isValid(bookId)) {
       return res.status(400).json({
         success: false,
@@ -216,17 +205,78 @@ const deleteBook = async (req, res, next) => {
     });
   } catch (err) {
     console.error(err);
-
-    // Các lỗi khác
     return next(err);
   }
 };
 
-const  bookController ={
+const getBooksByGenre = async (req, res, next) => {
+  try {
+    const genreId = req.params.genreId;
+
+    if (!mongoose.Types.ObjectId.isValid(genreId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid genre ID",
+      });
+    }
+
+    const books = await Book.find({ genreId });
+
+    if (!books.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No books found for this genre",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      books,
+    });
+  } catch (err) {
+    console.error(err);
+    return next(err);
+  }
+};
+
+const getBooksByAuthor = async (req, res, next) => {
+  try {
+    const authorId = req.params.authorId;
+
+    if (!mongoose.Types.ObjectId.isValid(authorId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid author ID",
+      });
+    }
+
+    const books = await Book.find({ authorId });
+
+    if (!books.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No books found for this author",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      books,
+    });
+  } catch (err) {
+    console.error(err);
+    return next(err);
+  }
+};
+
+const bookController = {
   getBook,
   getAllBooks,
   addBook,
   updateBook,
   deleteBook,
-}
+  getBooksByGenre,
+  getBooksByAuthor,
+};
+
 module.exports = bookController;
